@@ -1,5 +1,7 @@
 const { ApolloServer } = require('@apollo/server')
 const { startStandaloneServer } = require('@apollo/server/standalone')
+const { v1: uuid } = require('uuid')
+
 
 let authors = [
   {
@@ -106,7 +108,7 @@ const typeDefs = `
     name: String!
     bookCount: Int!
     id: ID!
-    born: Int!
+    born: Int
   }
 
   type Query {
@@ -114,6 +116,15 @@ const typeDefs = `
     authorCount: Int!
     allBooks(author: String, genre: String): [Book!]!
     allAuthors: [Author!]!
+  }
+
+  type Mutation {
+    addBook(
+      title: String!
+      author: String!
+      published: Int!
+      genres: [String!]!
+    ): Book
   }
 `
 
@@ -141,6 +152,23 @@ const resolvers = {
   },
   Author: {
     bookCount: ({ name }) => books.filter(book => book.author === name).length,
+  },
+  Mutation: {
+    addBook: (root, args) => {
+      const existingBook = books.find(book => book.title === args.title && book.author === args.author);
+      if (existingBook) {
+        throw new Error('Book with the same title and author already exists.');
+      }
+  
+      const book = { ...args, id: uuid() };
+      books = books.concat(book);
+      const author = {
+        name: `${args.author}`,
+        id: uuid(),
+      }
+      authors = authors.concat(author);
+      return book;
+    }
   }
 }
 
