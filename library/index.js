@@ -133,6 +133,9 @@ const resolvers = {
       if (args.genre) {
         return books.filter(book => book.genres.includes(args.genre));
       }
+      if (args.author && args.genre) {
+        return books.filter(book => book.author === args.author && book.genres.includes(args.genre))
+      }
     },
     allAuthors: () => authors,
   },
