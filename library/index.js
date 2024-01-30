@@ -131,7 +131,7 @@ const typeDefs = `
   type Query {
     bookCount: Int!
     authorCount: Int!
-    allBooks(author: String, genre: String): [Book!]!
+    allBooks(author: String, genres: [String]): [Book!]!
     allAuthors: [Author!]!
   }
 
@@ -157,23 +157,23 @@ const resolvers = {
 
     allBooks: async (root, args) => {
       let query = {};
-  
+    
       if (args.author) {
         query.author = args.author;
       }
-  
-      if (args.genre) {
-        query.genres = args.genre;
+    
+      if (args.genres) {
+        query.genres = { $all: args.genres }; // $all is used to select documents where the specified array field contains all the specified elements
       }
-  
+    
       try {
-        const books = await Book.find(query).populate('author'); // Populate the 'author' field
+        const books = await Book.find(query).populate('author');
         return books;
       } catch (error) {
         throw new Error(`Error fetching books: ${error.message}`);
       }
-    },
-    
+    },    
+
     allAuthors: async() => {
       return Author.find({})
     },
