@@ -95,13 +95,30 @@ let books = [
   },
 ]
 
+const mongoose = require('mongoose')
+mongoose.set('strictQuery', false)
+const Book = require('./models/book')
+const Author = require('./models/author')
+require('dotenv').config()
+const MONGODB_URI = process.env.MONGODB_URI
+
+console.log('connecting to', MONGODB_URI)
+
+mongoose.connect(MONGODB_URI)
+  .then(() => {
+    console.log('connected to MongoDB')
+  })
+  .catch((error) => {
+    console.log('error connection to MongoDB:', error.message)
+  })
+
 const typeDefs = `
   type Book {
     title: String!
     published: Int!
-    author: String!
-    id: ID!
+    author: Author!
     genres: [String!]!
+    id: ID!
   }
 
   type Author {
@@ -134,45 +151,63 @@ const typeDefs = `
 
 const resolvers = {
   Query: {
-    bookCount: () => books.length,
-    authorCount: () => authors.length,
-    allBooks: (root, args) => {
-      if (!args.author && !args.genre) {
-        return books;
-      }
-    
+    bookCount: async() => Book.collection.countDocuments(), //count length of books
+
+    authorCount: async() => Author.collection.countDocuments(), //count length of authors in database
+
+    allBooks: async (root, args) => {
+      let query = {};
+  
       if (args.author) {
-        return books.filter(book => book.author === args.author);
+        query.author = args.author;
       }
-    
+  
       if (args.genre) {
-        return books.filter(book => book.genres.includes(args.genre));
+        query.genres = args.genre;
       }
-      if (args.author && args.genre) {
-        return books.filter(book => book.author === args.author && book.genres.includes(args.genre))
+  
+      try {
+        const books = await Book.find(query).populate('author'); // Populate the 'author' field
+        return books;
+      } catch (error) {
+        throw new Error(`Error fetching books: ${error.message}`);
       }
     },
-    allAuthors: () => authors,
+    
+    allAuthors: async() => {
+      return Author.find({})
+    },
   },
+
   Author: {
     bookCount: ({ name }) => books.filter(book => book.author === name).length,
   },
+
   Mutation: {
-    addBook: (root, args) => {
-      const existingBook = books.find(book => book.title === args.title && book.author === args.author);
-      if (existingBook) {
-        throw new Error('Book with the same title and author already exists.');
+
+    addBook: async (root, args) => {
+      let author = await Author.findOne({ name: args.author });
+  
+      // If the author doesn't exist, create a new author
+      if (!author) {
+        author = new Author({ name: args.author });
+        await author.save();
       }
   
-      const book = { ...args, id: uuid() };
-      books = books.concat(book);
-      const author = {
-        name: `${args.author}`,
-        id: uuid(),
-      }
-      authors = authors.concat(author);
-      return book;
+      const book = new Book({
+        ...args,
+        author: author._id, // Use the ObjectId of the author
+        genres: args.genres,
+      });
+  
+      await book.save();
+      
+      // Retrieve the book with populated author information
+      const savedBook = await Book.findById(book._id).populate('author');
+  
+      return savedBook; // Return the created book with populated author
     },
+
     editAuthor: (root, args) => {
       const author = authors.find(author => author.name === args.name)
       if (!author) {
