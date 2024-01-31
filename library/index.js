@@ -3,6 +3,7 @@ const { startStandaloneServer } = require('@apollo/server/standalone')
 const { v1: uuid } = require('uuid')
 
 
+
 let authors = [
   {
     name: 'Robert Martin',
@@ -180,9 +181,19 @@ const resolvers = {
   },
 
   Author: {
-    bookCount: ({ name }) => books.filter(book => book.author === name).length,
+    bookCount: async ({ name }) => {
+      const author = await Author.find({ name: name });
+      let query = { author }; 
+      const books = await Book.find(query);
+  
+      if (books === null || books === undefined) {
+        return 0;
+      }
+  
+      return books.length;
+    }
   },
-
+  
   Mutation: {
 
     addBook: async (root, args) => {
@@ -200,7 +211,18 @@ const resolvers = {
         genres: args.genres,
       });
   
+      try {
       await book.save();
+      }
+      catch (error) {
+        throw new GraphQLError('Saving person failed', {
+          extensions: {
+            code: 'BAD_USER_INPUT',
+            invalidArgs: args.name,
+            error
+          }
+        })
+      }
       
       // Retrieve the book with populated author information
       const savedBook = await Book.findById(book._id).populate('author');
@@ -208,15 +230,18 @@ const resolvers = {
       return savedBook; // Return the created book with populated author
     },
 
-    editAuthor: (root, args) => {
-      const author = authors.find(author => author.name === args.name)
-      if (!author) {
-        return null
+    editAuthor: async (root, args) => {
+      try {
+        const updatedAuthor = await Author.findOneAndUpdate(
+          { name: args.name },
+          { $set: { born: args.setBornTo } },
+          { new: true }
+        );
+        return updatedAuthor;
+      } catch (error) {
+        throw new Error(`Editing author failed: ${error.message}`);
       }
-      const updatedAuthor = {...args,born: args.setBornTo}
-      authors = authors.map(author => author.name === args.name ? updatedAuthor : author)
-      return updatedAuthor
-    }
+    },
   }
 }
 
