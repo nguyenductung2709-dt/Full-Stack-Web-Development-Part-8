@@ -221,7 +221,7 @@ const resolvers = {
   
   Mutation: {
 
-    addBook: async (root, args) => {
+    addBook: async (root, args, context) => {
       let author = await Author.findOne({ name: args.author });
 
       if (!context.currentUser) {
@@ -259,7 +259,7 @@ const resolvers = {
       return savedBook; // Return the created book with populated author
     },
 
-    editAuthor: async (root, args) => {
+    editAuthor: async (root, args, context) => {
       if (!context.currentUser) {
         throw new Error('Authentication required to add a book');
       }
