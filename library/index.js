@@ -223,6 +223,10 @@ const resolvers = {
 
     addBook: async (root, args) => {
       let author = await Author.findOne({ name: args.author });
+
+      if (!context.currentUser) {
+        throw new Error('Authentication required to add a book');
+      }
   
       // If the author doesn't exist, create a new author
       if (!author) {
@@ -256,6 +260,10 @@ const resolvers = {
     },
 
     editAuthor: async (root, args) => {
+      if (!context.currentUser) {
+        throw new Error('Authentication required to add a book');
+      }
+      
       try {
         const updatedAuthor = await Author.findOneAndUpdate(
           { name: args.name },
