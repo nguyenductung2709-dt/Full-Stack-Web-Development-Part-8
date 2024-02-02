@@ -2,12 +2,11 @@ const { ApolloServer } = require('@apollo/server')
 const { ApolloServerPluginDrainHttpServer } = require('@apollo/server/plugin/drainHttpServer')
 const { expressMiddleware } = require('@apollo/server/express4')
 const { makeExecutableSchema } = require('@graphql-tools/schema')
-const { WebSockerServer } = require('ws')
+
+const { WebSocketServer } = require('ws')
 const { useServer } = require('graphql-ws/lib/use/ws')
 
-
 const http = require('http')
-
 const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
@@ -41,22 +40,19 @@ const start = async () => {
   const app = express()
   const httpServer = http.createServer(app)
 
-//register a WebSocketServer object to listen to WebSocket connections
-  const wsServer = new WebSocketServer({ 
+  const wsServer = new WebSocketServer({
     server: httpServer,
     path: '/',
   })
-
+  
   const schema = makeExecutableSchema({ typeDefs, resolvers })
-  const serverCleanup = useServer({ schema }, wsServer)
+  const serverCleanup = useServer({ schema }, wsServer);
 
   const server = new ApolloServer({
     schema,
     plugins: [
-      // Proper shutdown for the HTTP server.
       ApolloServerPluginDrainHttpServer({ httpServer }),
       {
-      // Proper shutdown for the WebSocket server.
         async serverWillStart() {
           return {
             async drainServer() {
@@ -68,7 +64,6 @@ const start = async () => {
     ],
   })
 
-
   await server.start()
 
   app.use(
@@ -78,13 +73,18 @@ const start = async () => {
     expressMiddleware(server, {
       context: async ({ req }) => {
         const auth = req ? req.headers.authorization : null
-        if (auth && auth.startsWith('Bearer ')) {
-          const decodedToken = jwt.verify(auth.substring(7), process.env.JWT_SECRET)
-          const currentUser = await User.findById(decodedToken.id).populate(
-            'friends'
-          )
-          return { currentUser }
-        }
+        try {
+          if (auth && auth.startsWith('Bearer ')) {
+            const decodedToken = jwt.verify(auth.substring(7), process.env.JWT_SECRET)
+            const currentUser = await User.findById(decodedToken.id).populate(
+              'friends'
+            )
+            return { currentUser }
+          }}
+          catch (error) {
+            console.error('Token verification error:', error.message);
+          }
+          return { currentUser: { username: null, friends: null, id: null } };
       },
     }),
   )

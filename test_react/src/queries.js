@@ -13,12 +13,12 @@ const PERSON_DETAILS = gql`
 `
 
 export const ALL_PERSONS = gql`
-query {
-  allPersons {
-    ...PersonDetails
+  query {
+    allPersons{
+      ...PersonDetails
+  }
   }
   ${PERSON_DETAILS}
-}
 `
 
 export const FIND_PERSON = gql`
@@ -26,8 +26,8 @@ export const FIND_PERSON = gql`
     findPerson(name: $nameToSearch) {
       ...PersonDetails
     }
-    ${PERSON_DETAILS}
   }
+  ${PERSON_DETAILS}
 `
 
 export const CREATE_PERSON = gql`
@@ -68,4 +68,13 @@ export const LOGIN = gql`
       value
     }
   }
+`
+
+export const PERSON_ADDED = gql`
+  subscription {
+    personAdded {
+      ...PersonDetails
+    }
+  }
+  ${PERSON_DETAILS}
 `

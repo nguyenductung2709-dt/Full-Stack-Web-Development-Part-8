@@ -1,10 +1,10 @@
 const { GraphQLError } = require('graphql')
 const jwt = require('jsonwebtoken')
-const Person = require('./models/person')
-const User = require('./models/user')
 const { PubSub } = require('graphql-subscriptions')
 const pubsub = new PubSub()
 
+const Person = require('./models/person')
+const User = require('./models/user')
 
 const resolvers = {
   Query: {
@@ -55,17 +55,11 @@ const resolvers = {
           }
         })
       }
-      pubsub.publish('PERSON_ADDED', { personAdded: person }) //publish notification to all subscribed users
+  
+      pubsub.publish('PERSON_ADDED', { personAdded: person }) 
 
       return person
     },
-
-    Subscription: {
-      personAdded: {
-        subscribe: () => pubsub.asyncIterator('PERSON_ADDED') //clients are saved to an iterator object called PERSON_ADDED
-      },
-    },
-
     editNumber: async (root, args) => {
       const person = await Person.findOne({ name: args.name })
       person.phone = args.phone
@@ -111,6 +105,13 @@ const resolvers = {
         username: user.username,
         id: user._id,
       }
+
+      console.log('userForToken:', userForToken);
+      console.log('JWT_SECRET:', process.env.JWT_SECRET);
+
+      const token = jwt.sign(userForToken, process.env.JWT_SECRET);
+      console.log('Generated Token:', token);
+
   
       return { value: jwt.sign(userForToken, process.env.JWT_SECRET) }
     },
@@ -133,7 +134,12 @@ const resolvers = {
   
       return currentUser
     },
-  }
+  },
+  Subscription: {
+    personAdded: {
+      subscribe: () => pubsub.asyncIterator('PERSON_ADDED')
+    },
+  },
 }
 
 module.exports = resolvers
