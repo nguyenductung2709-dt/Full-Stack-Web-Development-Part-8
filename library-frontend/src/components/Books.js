@@ -1,44 +1,61 @@
 import { useQuery } from '@apollo/client'
 import { ALL_BOOKS } from '../queries'
 import { useState } from 'react'
-const Books = (props) => {
-  const result = useQuery(ALL_BOOKS)
 
-  const [genre, setGenre] = useState('')
+const Books = (props) => {
+  const { loading: initialLoading, data: initialData } = useQuery(ALL_BOOKS);
+  const [genre, setGenre] = useState('');
+
+  const { loading, data } = useQuery(ALL_BOOKS, {
+    variables: { genre },
+    skip: !genre, 
+  });
+
+  const booksFiltered = data ? data.allBooks : [];
 
   if (!props.show) {
-    return null
+    return null;
   }
 
-  const books = result.data ? result.data.allBooks : []
-  const booksFiltered = books.filter(book => book.genres.includes(genre))
-  const genresDefault = books.map(book => book.genres)
-  const genres = Array.from(new Set([].concat(...genresDefault)))
+  const books = initialData ? initialData.allBooks : [];
+  const genresDefault = books.map(book => book.genres);
+  const genres = Array.from(new Set([].concat(...genresDefault)));
+
   return (
     <div>
       <h2>books</h2>
-      <p> in genre <strong> {genre} </strong> </p>
-      <table>
-        <tbody>
-          <tr>
-            <th></th>
-            <th>author</th>
-            <th>published</th>
-          </tr>
-          {booksFiltered.map((a) => (
-            <tr key={a.title}>
-              <td>{a.title}</td>
-              <td>{a.author.name}</td>
-              <td>{a.published}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {genres.map((genre) => (
-        <button onClick = {() => setGenre(`${genre}`)}>{genre}</button>
-      ))}
+      {genre && <p>in genre <strong>{genre}</strong></p>}
+      {loading || initialLoading ? (
+        <p>Loading...</p>
+      ) : (
+        <>
+          <table>
+            <tbody>
+              <tr>
+                <th></th>
+                <th>author</th>
+                <th>published</th>
+              </tr>
+              {booksFiltered.map((book) => (
+                <tr key={book.title}>
+                  <td>{book.title}</td>
+                  <td>{book.author.name}</td>
+                  <td>{book.published}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div>
+            {genres.map((genre) => (
+              <button key={genre} onClick={() => setGenre(genre)}>
+                {genre}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
-  )
-}
+  );
+};
 
-export default Books
+export default Books;

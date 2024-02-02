@@ -144,7 +144,7 @@ const typeDefs = `
   type Query {
     bookCount: Int!
     authorCount: Int!
-    allBooks(author: String, genres: [String]): [Book!]!
+    allBooks(author: String, genre: String): [Book!]!
     allAuthors: [Author!]!
     me: User
   }
@@ -184,8 +184,8 @@ const resolvers = {
         query.author = args.author;
       }
     
-      if (args.genres) {
-        query.genres = { $all: args.genres }; // $all is used to select documents where the specified array field contains all the specified elements
+      if (args.genre) {
+        query.genres = { $in: [args.genre] }; // $in to check if the genre is in the array
       }
     
       try {

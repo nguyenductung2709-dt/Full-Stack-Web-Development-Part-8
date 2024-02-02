@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useMutation, useQuery } from '@apollo/client';
-import { LOGIN, ME } from '../queries';
+import { useMutation } from '@apollo/client';
+import { LOGIN } from '../queries';
 
 const LoginForm = ({ setToken, show, setPage }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [user, setUser] = useState(null);
 
   const [login, result] = useMutation(LOGIN);
-  //const meResult = useQuery(ME);
 
   useEffect(() => {
     if (result.data) {
@@ -19,14 +17,6 @@ const LoginForm = ({ setToken, show, setPage }) => {
     }
   }, [result.data, setToken]);
 
-
-  /*useEffect(() => {
-    if (meResult.data && meResult.data.me) {
-      setUser(meResult.data.me.username);
-      console.log(meResult.data.me.username);
-    }
-  }, [setToken]);*/
-  
   const submit = async (event) => {
     event.preventDefault();
     login({ variables: { username, password } });
@@ -39,7 +29,6 @@ const LoginForm = ({ setToken, show, setPage }) => {
 
   return (
     <div>
-      {!user ? (
         <div>
         <form onSubmit={submit}>
           <div>
@@ -60,10 +49,6 @@ const LoginForm = ({ setToken, show, setPage }) => {
           <button type='submit'>login</button>
         </form>
         </div>
-
-      ) : (
-        <h1>{user} logged in</h1>
-      )}
     </div>
   );
 };

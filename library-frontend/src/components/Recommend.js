@@ -7,9 +7,16 @@ const Recommend = ({ show, token }) => {
     skip: !token,
   });
 
-  const result = useQuery(ALL_BOOKS)
-  const books = result.data ? result.data.allBooks : []
+  const user = data ? data.me : null;
+  const genre = user?.favoriteGenre;
 
+  const { loading: loading2, data: data2 } = useQuery(ALL_BOOKS, {
+    variables: { genre },
+    skip: !genre, 
+  });
+
+  const booksFiltered = data2 ? data2.allBooks : [];
+  
   useEffect(() => {
     if (token) {
       refetch();
@@ -17,19 +24,11 @@ const Recommend = ({ show, token }) => {
   }, [token, refetch]);
 
   if (loading) {
-    return <p>Loading...</p>;
+    return <p>Loading user data...</p>;
   }
 
   if (error) {
     return <p>Error: {error.message}</p>;
-  }
-
-  const user = data ? data.me : null;
-
-  let booksFiltered 
-
-  if (user) {
-    booksFiltered = books.filter(book => book.genres.includes(user.favoriteGenre));
   }
 
   if (!show || !user) {
@@ -39,28 +38,31 @@ const Recommend = ({ show, token }) => {
   return (
     <>
       <h2>Recommendations</h2>
-      <p>Books in your favorite genre <strong>{user.favoriteGenre}</strong></p>
-      <table>
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Author</th>
-            <th>Published</th>
-          </tr>
-        </thead>
-        <tbody>
-          {booksFiltered.map((a) => (
-            <tr key={a.title}>
-              <td>{a.title}</td>
-              <td>{a.author.name}</td>
-              <td>{a.published}</td>
+      {genre && <p>Books in your favorite genre <strong>{genre}</strong></p>}
+      {loading2 ? (
+        <p>Loading recommended books...</p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Author</th>
+              <th>Published</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {booksFiltered.map((book) => (
+              <tr key={book.title}>
+                <td>{book.title}</td>
+                <td>{book.author.name}</td>
+                <td>{book.published}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </>
   );
-  
 };
 
 export default Recommend;
