@@ -1,3 +1,12 @@
+const { GraphQLError } = require('graphql')
+const { PubSub } = require('graphql-subscriptions')
+const pubsub = new PubSub()
+const Book = require('./models/book')
+const Author = require('./models/author')
+const User = require('./models/user');
+require('dotenv').config()
+const jwt = require('jsonwebtoken')
+
 const resolvers = {
     Query: {
       bookCount: async() => Book.collection.countDocuments(), //count length of books
@@ -83,6 +92,8 @@ const resolvers = {
         // Retrieve the book with populated author information
         const savedBook = await Book.findById(book._id).populate('author');
     
+        pubsub.publish('BOOK_ADDED', {bookAdded: savedBook})
+
         return savedBook; // Return the created book with populated author
       },
   
@@ -133,7 +144,13 @@ const resolvers = {
         }
         return { value: jwt.sign(userForToken, process.env.JWT_SECRET) }
       }
-  }}
+  },
+  Subscription: {
+    bookAdded: {
+      subscribe: () => pubsub.asyncIterator('BOOK_ADDED')
+    },
+  },
+}
 
   
 module.exports = resolvers

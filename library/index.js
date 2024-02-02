@@ -81,9 +81,12 @@ const start = async () => {
         const auth = req ? req.headers.authorization : null
         try {
           if (auth && auth.startsWith('Bearer')) {
-            const decodedToken = jwt.verify(auth.substring(7), process.env.JWT_SECRET);
+            const token = auth.substring(7);
+            const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+            console.log('Decoded Token:', decodedToken);
+        
             const currentUser = await User.findById(decodedToken.id);
-    
+        
             if (currentUser) {
               return { currentUser };
             }
@@ -91,8 +94,6 @@ const start = async () => {
         } catch (error) {
           console.error('Token verification error:', error.message);
         }
-    
-        return { currentUser: { username: null, favoriteGenre: null, id: null } };
       },
     }),
   )
