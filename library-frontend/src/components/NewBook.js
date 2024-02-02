@@ -1,6 +1,23 @@
 import { useState } from 'react'
-import { useMutation, useSubscription } from '@apollo/client'
+import { useMutation, useSubscription, useApolloClient } from '@apollo/client';
 import { ALL_BOOKS, ADD_BOOK, BOOK_ADDED } from '../queries' 
+
+
+export const updateCache = (cache, query, addedBook) => {
+  const uniqByTitle = (a) => {
+    let seen = new Set()
+    return a.filter((item) => {
+      let k = item.title
+      return seen.has(k) ? false : seen.add(k)
+    })
+  }
+
+  cache.updateQuery(query, ({ allBooks }) => {
+    return {
+      allBooks: uniqByTitle(allBooks.concat(addedBook)),
+    }
+  })
+}
 
 const NewBook = (props) => {
   const [title, setTitle] = useState('')
@@ -8,6 +25,8 @@ const NewBook = (props) => {
   const [published, setPublished] = useState('')
   const [genre, setGenre] = useState('')
   const [genres, setGenres] = useState([])
+
+  const client = useApolloClient(); 
 
   const [createBook] = useMutation(ADD_BOOK, {
     update: (cache, { data: { createBook } }) => {
@@ -25,9 +44,11 @@ const NewBook = (props) => {
   useSubscription(BOOK_ADDED, {
     onSubscriptionData: ({ subscriptionData }) => {
       const data = subscriptionData.data;
+      const addedBook = data.bookAdded;
       if (data && data.bookAdded) {
-        window.alert(`Book added: ${data.bookAdded.title}`)
+        window.alert(`Book added: ${addedBook.title}`)
       }
+      updateCache(client.cache, { query: ALL_BOOKS }, addedBook)
     },
   });
 
