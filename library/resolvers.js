@@ -33,6 +33,7 @@ const resolvers = {
       },    
   
       allAuthors: async() => {
+        console.log("Author found")
         return Author.find({})
       },
       
@@ -50,7 +51,7 @@ const resolvers = {
         if (books === null || books === undefined) {
           return 0;
         }
-    
+        console.log("Book count")
         return books.length;
       }
     },
